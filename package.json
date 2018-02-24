@@ -1,0 +1,24 @@
+{
+   "name": "page-check",
+   "main": "page-check.js",
+   "version": "1.0.0",
+   "author": {
+      "url": "https://github.com/tpkn/"
+   },
+   "dependencies": {
+      "phantom": "latest"
+   },
+   "repository": "https://github.com/tpkn/page-check",
+   "license": "MIT",
+   "keywords": [
+      "page",
+      "web",
+      "check",
+      "errors",
+      "find",
+      "phantom",
+      "console",
+      "external",
+      "files"
+   ]
+}
