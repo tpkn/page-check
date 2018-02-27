@@ -1,5 +1,5 @@
 /*!
- * Page Check (v1.0.0.20180225), http://tpkn.me/
+ * Page Check (v1.0.1.20180227), http://tpkn.me/
  */
 
 const path = require('path');
@@ -74,7 +74,10 @@ function PageCheck(link, options, timeout = 60){
       })
       .then(status => {
          if(status === 'fail'){
-            phantom.exit();
+            page.close().then(() => {
+               phantom.exit();
+            });
+
             reject({status: 'fail', message: 'can\'t open ' + link});
             return;
          }
@@ -89,7 +92,10 @@ function PageCheck(link, options, timeout = 60){
          // Lets wait for a while...
          aid = setTimeout(() => {
             clearInterval(rid);
-            phantom.exit(0);
+
+            page.close().then(() => {
+               phantom.exit(0);
+            })
 
             errors.sort((a, b) => a.code - b.code);
             
