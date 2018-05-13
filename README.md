@@ -10,6 +10,13 @@ Module runs your webpage, app or banner within PhantomJS. While running, it regi
 - requesting files from different host
 
 
+## Installation
+```bash
+npm install page-check
+```
+
+
+
 ## Usage
 ```javascript
 const PageCheck = require('page-check');
