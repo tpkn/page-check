@@ -44,6 +44,7 @@ This function will be used by `Array.filter()` to filter final list of errors.
 For example we could leave only `js errors` and `missing files`:    
 
 **Error codes:**
+
 | Code | Error |
 | :------: | ------ |
 | 1 | page error |
