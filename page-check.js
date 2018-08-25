@@ -1,9 +1,9 @@
 /*!
- * Page Check (v1.0.1.20180227), http://tpkn.me/
+ * Page Check, http://tpkn.me/
  */
 
 const path = require('path');
-const phantomjs = require('phantom');
+const puppeteer = require('puppeteer');
 
 
 /**
@@ -22,80 +22,89 @@ function isClone(list, error){
    return false;
 }
 
-function PageCheck(link, options, timeout = 60){
-   return new Promise((resolve, reject) => {
-      let rid, aid, phantom, page, errors = [];
 
-      let no_clones = typeof options.no_clones !== 'undefined' ? options.no_clones : false;
+function PageCheck(link, options){
+   return new Promise(async (resolve, reject) => {
+      try {
 
-      if(typeof options === 'number'){
-         timeout = options;
-      }
+         let errors = [];
 
-      phantomjs.create()
-      .then(ph => {
-         phantom = ph;
-         return phantom.createPage();
-      })
-      .then(pg => {
-         page = pg;
+         let timeout = typeof options.timeout === 'number' ? options.timeout : 60;
+         let headless = typeof options.headless !== 'undefined' ? options.headless : true;
+         let devtools = typeof options.devtools !== 'undefined' ? options.devtools : false;
+         let clones = typeof options.clones !== 'undefined' ? options.clones : false;
 
-         // Js error
-         page.on('onError', (err, trace) => {
-            if(trace && trace.length){
-               trace.forEach(t => {
-                  if(!no_clones || !isClone(errors, err)){
-                     errors.push({code: 1, type: 'js error', details: err, line: 'line ' + t.line});
-                  }
-               });
+
+         const browser = await puppeteer.launch({ headless: headless, devtools: devtools });
+         const pages = await browser.pages();
+         const page = pages[0];
+
+         await page.bringToFront();
+         await page.setRequestInterception(true);
+
+         page.emulate({
+            viewport: { width: 1500, height: 1000 },
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
+         })
+
+
+         // Js errors
+         page.on('pageerror', err => {
+            let msg = err.message.replace(/([\n\r\t]|\s{2,})+/g, ' ');
+            if(clones || !isClone(errors, msg)){
+               errors.push({code: 1, type: 'page error', details: msg});
             }
          });
 
-         // Missing files
-         page.on('onResourceError', (resourceError) => {
-            errors.push({code: 2, type: 'missing file', details: resourceError.errorString, line: ''});
+         // Is same host request
+         page.on('request', req => {
+            let url = req.url();
+            if(url.indexOf(link) == -1){
+               errors.push({code: 3, type: 'external request', details: url});
+            }
+            req.continue();
+         });
+
+         // Failed requests
+         page.on('requestfailed', req => {
+            let url = req.url();
+            if(clones || !isClone(errors, url)){
+               errors.push({code: 2, type: 'request failed', details: url});
+            }
          });
 
          // Console
-         page.on('onConsoleMessage', (msg, lineNum, sourceId) => {
-            if(!no_clones || !isClone(errors, msg)){
-               errors.push({code: 3, type: 'console', details: msg, line: typeof lineNum === 'undefined' ? '' : lineNum});
+         page.on('console', msg => {
+            let type = msg.type();
+            let message = msg.text();
+            let code = type === 'log' ? 4 : type === 'error' ? 6 : 5;
+            if(clones || !isClone(errors, message)){
+               errors.push({code: code, type: 'console.' +  type, details: message});
             }
          });
 
-         // External files
-         page.on('onResourceRequested', (requestData, networkRequest) => {
-            if(requestData.url.indexOf(link) == -1){
-               errors.push({code: 4, type: 'external request', details: requestData.url, line: ''});
+         // Alerts and stuff
+         page.on('dialog', async dialog => {
+            let msg = dialog.message();
+            if(clones || !isClone(errors, msg)){
+               errors.push({code: 7, type: 'dialog', details: msg});
             }
+            await dialog.dismiss();
          });
 
-         return page.open(link);
-      })
-      .then(status => {
-         if(status === 'fail'){
-            page.close().then(() => {
-               phantom.exit();
-            });
 
-            reject({status: 'fail', message: 'can\'t open ' + link});
-            return;
-         }
+         await page.goto(link, { waitUntil: 'networkidle2' });
 
-         // Some error could be inside 'resize' handler
-         rid = setInterval(function(){
-            let size = Math.floor(Math.random() * 1000);
-            page.property('viewportSize', { width: size, height: size });
-         }, timeout * 100);
+
+         // Resize viewport to catch errors inside 'onresize' handlers
+         let rid = setInterval(async function(){
+            await page.setViewport({width: Math.floor(Math.random() * 1000), height: 250});
+         }, 500);
 
 
          // Lets wait for a while...
-         aid = setTimeout(() => {
+         aid = setTimeout(async () => {
             clearInterval(rid);
-
-            page.close().then(() => {
-               phantom.exit(0);
-            })
 
             errors.sort((a, b) => a.code - b.code);
             
@@ -103,17 +112,17 @@ function PageCheck(link, options, timeout = 60){
                errors = errors.filter(options.filter);
             }
 
-            resolve({status: 'done', link: link, errors: errors});
+            resolve(errors);
+
+            await browser.close();
 
          }, timeout * 1000);
-      })
-      .catch(err => {
-         clearTimeout(aid);
-         clearInterval(rid);
-         phantom.exit(1);
 
-         reject({status: 'fail', message: err.message});
-      });
+
+      }catch(err){
+         reject(err);
+      }
+
    });
 }
 

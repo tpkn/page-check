@@ -1,12 +1,12 @@
 {
    "name": "page-check",
    "main": "page-check.js",
-   "version": "1.0.2",
+   "version": "2.0.0",
    "author": {
       "url": "https://github.com/tpkn/"
    },
    "dependencies": {
-      "phantom": "latest"
+      "puppeteer": "1.7.0"
    },
    "repository": "https://github.com/tpkn/page-check",
    "license": "MIT",
@@ -15,6 +15,8 @@
       "web",
       "check",
       "errors",
+      "puppeteer",
+      "phantom",
       "find",
       "phantom",
       "console",
