@@ -48,7 +48,7 @@ For example we could leave only `js errors` and `missing files`:
 | Code | Error |
 | :------: | ------ |
 | 1 | page error |
-| 2 | request failed |
+| 2 | failed request |
 | 3 | external request |
 | 4 | console.log |
 | 5 | console.error |

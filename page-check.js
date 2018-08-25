@@ -69,7 +69,7 @@ function PageCheck(link, options){
          page.on('requestfailed', req => {
             let url = req.url();
             if(clones || !isClone(errors, url)){
-               errors.push({code: 2, type: 'request failed', details: url});
+               errors.push({code: 2, type: 'failed request', details: url});
             }
          });
 
