@@ -35,7 +35,7 @@ Keep checking for this amout of seconds
 ### options.clones
 **Type**: _Boolean_   
 **Default**: `false`     
-If set to `true`, the same errors will be removed from the list
+If set to `false`, the same errors will be removed from the list
 
 
 ### options.filter   
@@ -43,9 +43,9 @@ If set to `true`, the same errors will be removed from the list
 This function will be used by `Array.filter()` to filter final list of errors.     
 For example we could leave only `js errors` and `missing files`:    
 
-**Error codes:**
+Here is the codes for quick filtering:
 
-| Code | Error |
+| Code | Event |
 | :------: | ------ |
 | 1 | page error |
 | 2 | failed request |
