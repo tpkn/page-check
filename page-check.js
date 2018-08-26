@@ -59,7 +59,7 @@ function PageCheck(link, options){
          // Is same host request
          page.on('request', req => {
             let url = req.url();
-            if(url.indexOf(link) == -1){
+            if(url.indexOf(link) != 0){
                errors.push({code: 3, type: 'external request', details: url});
             }
             req.continue();
