@@ -41,7 +41,7 @@ If set to `false`, the same errors will be removed from the list
 ### options.filter   
 **Type**: _Function_     
 This function will be used by `Array.filter()` to filter final list of errors.     
-For example we could leave only `js errors` and `missing files`:    
+For example we could leave only `js errors` and `external request`:    
 
 Here is the codes for quick filtering:
 
