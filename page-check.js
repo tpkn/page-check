@@ -23,11 +23,12 @@ function isClone(list, error){
 }
 
 
-function PageCheck(link, options){
+function PageCheck(pages_list, options){
    return new Promise(async (resolve, reject) => {
       try {
 
-         let errors = [];
+         let results_list = [];
+         let current_test = {};
 
          let timeout = typeof options.timeout === 'number' ? options.timeout : 60;
          let headless = typeof options.headless !== 'undefined' ? options.headless : true;
@@ -41,9 +42,8 @@ function PageCheck(link, options){
 
          await page.bringToFront();
          await page.setRequestInterception(true);
-
          page.emulate({
-            viewport: { width: 1500, height: 1000 },
+            viewport: { width: 1000, height: 600 },
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
          })
 
@@ -51,78 +51,98 @@ function PageCheck(link, options){
          // Js errors
          page.on('pageerror', err => {
             let msg = err.message.replace(/([\n\r\t]|\s{2,})+/g, ' ');
-            if(clones || !isClone(errors, msg)){
-               errors.push({code: 1, type: 'page error', details: msg});
+            if(clones || !isClone(current_test.errors, msg)){
+               current_test.errors.push({code: 1, type: 'page error', details: msg});
+            }
+         });
+
+         // Failed requests
+         page.on('requestfailed', req => {
+            let url = req.url();
+            if(clones || !isClone(current_test.errors, url)){
+               current_test.errors.push({code: 2, type: 'failed request', details: url});
             }
          });
 
          // Is same host request
          page.on('request', req => {
             let url = req.url();
-            if(url.indexOf(link) != 0){
-               errors.push({code: 3, type: 'external request', details: url});
+            if(url.indexOf(current_test.url) == -1){
+               current_test.errors.push({code: 3, type: 'external request', details: url});
             }
             req.continue();
-         });
-
-         // Failed requests
-         page.on('requestfailed', req => {
-            let url = req.url();
-            if(clones || !isClone(errors, url)){
-               errors.push({code: 2, type: 'failed request', details: url});
-            }
          });
 
          // Console
          page.on('console', msg => {
             let type = msg.type();
             let message = msg.text();
-            let code = type === 'log' ? 4 : type === 'error' ? 6 : 5;
-            if(clones || !isClone(errors, message)){
-               errors.push({code: code, type: 'console.' +  type, details: message});
+            let code = type === 'log' ? 6 : type === 'error' ? 7 : 8;
+            if(clones || !isClone(current_test.errors, message)){
+               current_test.errors.push({code: code, type: 'console.' +  type, details: message});
             }
          });
 
          // Alerts and stuff
          page.on('dialog', async dialog => {
             let msg = dialog.message();
-            if(clones || !isClone(errors, msg)){
-               errors.push({code: 7, type: 'dialog', details: msg});
+            if(clones || !isClone(current_test.errors, msg)){
+               current_test.errors.push({code: 9, type: 'dialog', details: msg});
             }
             await dialog.dismiss();
          });
 
 
-         await page.goto(link, { waitUntil: 'networkidle2' });
 
+         /**
+          * Building checking queue
+          */
+         for(let i = 0, len = pages_list.length; i < len; i++){
+            try{
 
-         // Resize viewport to catch errors inside 'onresize' handlers
-         let rid = setInterval(async function(){
-            await page.setViewport({width: Math.floor(Math.random() * 1000), height: 250});
-         }, 500);
+               let item = pages_list[i]
 
+               // Reset current test data collector
+               current_test = { url: item, errors: [] };
 
-         // Lets wait for a while...
-         aid = setTimeout(async () => {
-            clearInterval(rid);
+               await page.goto(item, { waitUntil: 'networkidle2', timeout: 45000 });
+               
+               // Resize viewport to catch errors inside 'onresize' handlers
+               let rid = setInterval(async function(){
+                  await page.setViewport({width: Math.floor(Math.random() * 1000), height: 250});
+               }, 200);
 
-            errors.sort((a, b) => a.code - b.code);
-            
-            if(typeof options.filter === 'function'){
-               errors = errors.filter(options.filter);
+               // Timeout before next page test
+               await page.waitFor(timeout * 1000);
+
+               clearInterval(rid);
+
+            }catch(err){
+               current_test.errors = [{code: 10, type: 'server error', details: err.message}];
             }
 
-            resolve(errors);
 
-            await browser.close();
+            // Sort errors by code
+            current_test.errors.sort((a, b) => a.code - b.code);
+            
+            // Apply users filter
+            if(typeof options.filter === 'function'){
+               current_test.errors = current_test.errors.filter(options.filter);
+            }
 
-         }, timeout * 1000);
+            results_list.push(current_test);
+         }
 
+
+         /**
+          * Finish checking
+          */
+         await browser.close();
+         resolve(results_list)
 
       }catch(err){
          reject(err);
       }
-
    });
 }
 
