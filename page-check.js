@@ -97,6 +97,10 @@ function PageCheck(pages_list, options){
          /**
           * Building checking queue
           */
+         if(!Array.isArray(pages_list)){
+            pages_list = [pages_list];
+         }
+         
          for(let i = 0, len = pages_list.length; i < len; i++){
             try{
 
