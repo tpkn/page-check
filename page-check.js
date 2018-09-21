@@ -113,7 +113,9 @@ function PageCheck(pages_list, options){
                
                // Resize viewport to catch errors inside 'onresize' handlers
                let rid = setInterval(async function(){
-                  await page.setViewport({width: Math.floor(Math.random() * 1000), height: 250});
+                  try{
+                     await page.setViewport({width: Math.floor(Math.random() * 1000), height: 250});
+                  }catch(err){}
                }, 200);
 
                // Timeout before next page test
@@ -137,12 +139,12 @@ function PageCheck(pages_list, options){
             results_list.push(current_test);
          }
 
-
          /**
           * Finish checking
           */
          await browser.close();
-         resolve(results_list)
+
+         resolve(results_list);
 
       }catch(err){
          reject(err);

@@ -122,6 +122,9 @@ console.log(JSON.stringify(results, true, 2));
 
 
 ## Changelog 
+#### v2.1.1 (2018-09-21):
+- fixed `Unhandled promise rejection` when the browser was closing but 'setViewport' keep firing
+
 #### v2.1.0 (2018-08-30):
 - `link` now could be an array of links that would be auto queued
 
