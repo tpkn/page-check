@@ -20,9 +20,9 @@ npm install page-check
 
 ## API
 
-### PageCheck(link[, options])
+### PageCheck(input[, options])
 
-### link   
+### input   
 **Type**: _String_ | _Array_   
 
 
@@ -57,6 +57,23 @@ Here is the codes for quick filtering:
 | 10 | not existing page or any else errors | 
 
 
+
+### options.viewport    
+**Type**: _Object_   
+**Default**: `{ width: 1000, height: 600 }`  
+
+
+### options.screenshot    
+**Type**: _Boolean_   
+**Default**: `false`  
+
+
+### options.screenshot.delay    
+**Type**: _Number_   
+**Default**: `3`  
+Wait for this number of seconds before taking a screenshot
+
+
 ### options.headless    
 **Type**: _Boolean_     
 **Default**: `true`  
@@ -73,19 +90,16 @@ Here is the codes for quick filtering:
 ```javascript
 const PageCheck = require('page-check');
 
-let queue = [
-   'http://localhost/page1', 
-   'http://localhost/page2', 
-   'http://localhost/page3'
-]
-
-let results = await PageCheck(queue, {
-   timeout: 3, 
-   clones: true,
-   filter: err => /[1234]/.test(err.code)
+let results = await PageCheck('http://localhost/page', {
+   timeout: 15, 
+   filter: err => /[1234]/.test(err.code), 
+   screenshot: {
+      delay: 5,
+      path: `./screenshots/${Date.now()}.png`
+   }
 });
 
-console.log(JSON.stringify(results, true, 2));
+console.log(results);
 ```
 
 
@@ -93,28 +107,27 @@ console.log(JSON.stringify(results, true, 2));
 
 ## Output
 ```
-[
-  {
-    "url": "http://localhost/test",
-    "errors": [
-      {
-        "code": 3,
-        "type": "external request",
-        "details": "http://domain.com/favicon.ico"
-      },
-      {
-        "code": 6,
-        "type": "console.log",
-        "details": "Boop!"
-      },
-      {
-        "code": 7,
-        "type": "console.error",
-        "details": "Failed to load resource: the server responded with a status of 404 (Not Found)"
-      }
-    ]
-  }
-]
+{
+  "input": "http://localhost/test",
+  "screenshot": <Buffer>,
+  "errors": [
+    {
+      "code": 3,
+      "type": "external request",
+      "details": "http://domain.com/favicon.ico"
+    },
+    {
+      "code": 6,
+      "type": "console.log",
+      "details": "Boop!"
+    },
+    {
+      "code": 7,
+      "type": "console.error",
+      "details": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+  ]
+}
 ```
 
 
@@ -122,11 +135,15 @@ console.log(JSON.stringify(results, true, 2));
 
 
 ## Changelog 
+#### v3.0.0 (2018-11-11):
+- `input` argument now could be only a `String`
+- now you can take a screenshot of the testing page
+
 #### v2.1.1 (2018-09-21):
 - fixed `Unhandled promise rejection` when the browser was closing but 'setViewport' keep firing
 
 #### v2.1.0 (2018-08-30):
-- `link` now could be an array of links that would be auto queued
+- `input` now could be an array of links that would be auto queued
 
 #### v2.0.0 (2018-08-26):
 - moved from unmaintained PhantomJS to Puppeteer
