@@ -8,7 +8,7 @@ const puppeteer = require('puppeteer');
 async function PageCheck(input, options){
    let rid;
    let resize_interval = 0.5; //sec
-   let results = { input: input, errors: [] };
+   let results = { errors: [] };
 
    let browser, pages, page;
 
@@ -17,21 +17,20 @@ async function PageCheck(input, options){
       /**
        * Options
        */
-      let timeout = typeof options.timeout === 'number' ? options.timeout : 60;
-      let viewport = typeof options.viewport === 'object' ? options.viewport : { width: 1000, height: 600 };
-      let headless = typeof options.headless !== 'undefined' ? options.headless : false;
-      let devtools = typeof options.devtools !== 'undefined' ? options.devtools : false;
-      let clones = typeof options.clones !== 'undefined' ? options.clones : false;
-      let screenshot = typeof options.screenshot !== 'undefined' ? options.screenshot : false;
-      let screenshot_delay = typeof screenshot.delay === 'number' ? screenshot.delay : 3;
-      let screenshot_config = {};
-      let screenshot_path = typeof screenshot.path === 'string' ? screenshot_config.path = screenshot.path : {};
+      let { 
+         timeout = 60, 
+         viewport = { width: 1000, height: 600 }, 
+         headless = true, 
+         devtools = false, 
+         clones = false, 
+         screenshot
+      } = options;
 
 
       /**
        * Chromium stuff
        */
-      browser = await puppeteer.launch({ headless: headless, devtools: devtools });
+      browser = await puppeteer.launch({ headless, devtools });
       pages = await browser.pages();
       page = pages[0];
 
@@ -68,13 +67,22 @@ async function PageCheck(input, options){
       page.on('request', req => {
          let url = req.url();
          let url_host = Url.parse(url).host;
-         let input_host = Url.parse(results.input).host;
+         let input_host = Url.parse(input).host;
 
+         // Base64 data does not count as 'external request'
          if(url_host !== input_host && !/^data\:(image|text)/i.test(url)){
             results.errors.push({code: 3, type: 'external request', details: url});
          }
 
-         req.continue();
+         // Headed version requests 'favicon.ico' file that doesn't exist in 99.99999% of my cases
+         // The bad thing is that this request falls into the list of errors, so we just imitate that this file exists
+         if(/favicon\.ico$/i.test(url) && !headless){
+            req.respond({
+               status: 200
+            });
+         }else{
+            req.continue();
+         }
       });
 
       // Console?
@@ -113,22 +121,14 @@ async function PageCheck(input, options){
        */
       try {
 
-         if(/^https?\:\/\//i.test(input)){
-            await page.goto(input, { waitUntil: 'networkidle2', timeout: 45000 });
-         }else{
-            throw new Error('Invalid input. Must be a link for now!');
-            
-            // await page.goto('data:text/html,' + input, { waitUntil: 'networkidle2', timeout: 45000 });
-            // await page.setContent(input);
-         }
-
+         await page.goto(input, { waitUntil: 'networkidle2', timeout: 45000 });
 
          // Resize viewport to catch errors inside 'onresize' handlers
          rid = setInterval(resizeViewport, resize_interval * 1000, page, viewport);
 
-
          // Take a screenshot
          if(screenshot){
+            let { delay = 3 } = screenshot;
             setTimeout(async () => {
 
                if(!page.isClosed()){
@@ -136,7 +136,7 @@ async function PageCheck(input, options){
                   clearInterval(rid);
                   await page.setViewport(viewport);
 
-                  let screenshot_buffer = await page.screenshot(screenshot_config);
+                  let screenshot_buffer = await page.screenshot(screenshot);
                   if(screenshot_buffer){
                      results.screenshot = screenshot_buffer;
                   }
@@ -145,18 +145,18 @@ async function PageCheck(input, options){
                   rid = setInterval(resizeViewport, resize_interval * 1000, page, viewport);
                }
 
-            }, screenshot_delay * 1000);
+            }, delay * 1000);
          }
 
       }catch(err){
          results.errors = [{code: 10, type: 'server error', details: err.message}];
 
-         await browser.close();
+         await closeAll(pages, browser);
          return results;
       }
 
 
-      // Sort and filter results
+      // Sort and filter results by group code
       results.errors.sort((a, b) => a.code - b.code);
 
       // Apply users filter
@@ -169,13 +169,26 @@ async function PageCheck(input, options){
        * Finish
        */
       await page.waitFor(timeout * 1000);
-      await browser.close();
+      await closeAll(pages, browser);
       return results;
 
    }catch(err){
-      await browser.close();
+      await closeAll(pages, browser);
       return err;
    }
+}
+
+
+/**
+ * Close all pages, close browser
+ * 
+ * @param   {Object}  pages
+ * @param   {Object}  browser
+ */
+async function closeAll(pages, browser){
+   await Promise.all(pages.map(async page => await page.close()));
+   await browser.close();
+   return;
 }
 
 /**

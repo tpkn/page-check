@@ -108,7 +108,6 @@ console.log(results);
 ## Output
 ```
 {
-  "input": "http://localhost/test",
   "screenshot": <Buffer>,
   "errors": [
     {
@@ -135,6 +134,9 @@ console.log(results);
 
 
 ## Changelog 
+#### v3.0.1 (2018-11-13):
+- removed `input` property from results data
+
 #### v3.0.0 (2018-11-11):
 - `input` argument now could be only a `String`
 - now you can take a screenshot of the testing page
