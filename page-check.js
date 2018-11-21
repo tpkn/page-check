@@ -45,7 +45,7 @@ async function PageCheck(input, options){
       /**
        * Page events listeners
        */
-      // Js error?
+      // 1 - Js error?
       page.on('pageerror', err => { 
          let msg = err.message.replace(/([\n\r\t]|\s{2,})+/g, ' ');
          
@@ -54,7 +54,8 @@ async function PageCheck(input, options){
          }
       });
 
-      // Failed request?
+
+      // 2 - Failed request?
       page.on('requestfailed', req => {
          let url = req.url();
          
@@ -62,6 +63,7 @@ async function PageCheck(input, options){
             results.errors.push({code: 2, type: 'failed request', details: url});
          }
       });
+
 
       // Request to the same host?
       page.on('request', req => {
@@ -85,7 +87,27 @@ async function PageCheck(input, options){
          }
       });
 
-      // Console?
+
+      // 4 - Waiting for sudden iframes
+      page.on('frameattached', async frame => {
+         let msg = 'iframe load timeout exceeded';
+         
+         try {
+            await frame.waitFor('body', { waitUntil: 'domcontentloaded', timeout: 45000 });
+            msg = frame.url();
+         }catch(err){}
+
+         if(/^(chrome\-error\:\/\/|data\:,)/.test(msg)){
+            msg = 'iframe with some error';
+         }
+         
+         if(clones || !isClone(results.errors, msg)){
+            results.errors.push({code: 4, type: 'iframe', details: msg});
+         }
+      });
+
+
+      // 6,7,8 - Console?
       page.on('console', msg => {
          let type = msg.type();
          let message = msg.text();
@@ -96,6 +118,7 @@ async function PageCheck(input, options){
             results.errors.push({code: code, type: 'console.' +  type, details: message});
          }
       });
+
 
       // Alerts and stuff like that?
       page.on('dialog', async dialog => {
@@ -186,8 +209,11 @@ async function PageCheck(input, options){
  * @param   {Object}  browser
  */
 async function closeAll(pages, browser){
-   await Promise.all(pages.map(async page => await page.close()));
-   await browser.close();
+   try {
+      await Promise.all(pages.map(async page => await page.close()));
+      await browser.close();
+   }catch(err){}
+   
    return;
 }
 
@@ -214,12 +240,14 @@ function isClone(list, error){
  * @param   {Object}  viewport
  */
 async function resizeViewport(page, viewport){
-   if(!page.isClosed()){
-      await page.setViewport({
-         width: viewport.width - Math.round(Math.random() * 2), 
-         height: viewport.height
-      });
-   }
+   try {
+      if(!page.isClosed()){
+         await page.setViewport({
+            width: viewport.width - Math.round(Math.random() * 2), 
+            height: viewport.height
+         });
+      }
+   }catch(err){}
 }
 
 module.exports = PageCheck;
