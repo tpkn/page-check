@@ -50,6 +50,7 @@ Here is the codes for quick filtering:
 | 1 | page error |
 | 2 | failed request |
 | 3 | external request |
+| 4 | iframe attached |
 | 6 | console.log |
 | 7 | console.error |
 | 8 | console.warn, console.info ... |
@@ -134,6 +135,9 @@ console.log(results);
 
 
 ## Changelog 
+#### v3.0.2 (2018-11-22):
+- added 'iframe' error type for attached iframes
+
 #### v3.0.1 (2018-11-13):
 - removed `input` property from results data
 
