@@ -69,7 +69,7 @@ Array of arguments that would be passed into `puppeteer.launch(args)`
 **Type**: _Array_   
 List of requests that should be replaced. For example, you don't want to wait until some heavy library is downloaded from remote server:
 
-```
+```javascript
 PageCheck(page_url, {
    args: [ '--disable-web-security' ],
    spoof_list: [
