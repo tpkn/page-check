@@ -59,9 +59,32 @@ Here is the codes for quick filtering:
 
 
 
-### options.viewport    
-**Type**: _Object_   
-**Default**: `{ width: 1000, height: 600 }`  
+### options.args    
+**Type**: _Array_   
+Array of arguments that would be passed into `puppeteer.launch(args)`
+
+
+
+### options.spoof_list    
+**Type**: _Array_   
+List of requests that should be replaced. For example, you don't want to wait until some heavy library is downloaded from remote server:
+
+```
+PageCheck(page_url, {
+   args: [ '--disable-web-security' ],
+   spoof_list: [
+      { 
+         rule: 'https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.8.2/pixi.js', 
+         body: fs.readFileSync('./libs/pixi.js'), 
+         status: 200, 
+         contentType: 'text/plain'
+      }, 
+   ]
+})
+```
+
+*Note:* set `args: [ '--disable-web-security' ]` if you have the CORS error
+
 
 
 ### options.screenshot    
@@ -73,6 +96,13 @@ Here is the codes for quick filtering:
 **Type**: _Number_   
 **Default**: `3`  
 Wait for this number of seconds before taking a screenshot
+
+
+
+### options.viewport    
+**Type**: _Object_   
+**Default**: `{ width: 1000, height: 600 }`  
+
 
 
 ### options.headless    
@@ -135,6 +165,9 @@ console.log(results);
 
 
 ## Changelog 
+#### v3.1.0 (2018-11-18):
+- added ability to spoof page requests
+
 #### v3.0.2 (2018-11-22):
 - added 'iframe' error type for attached iframes
 

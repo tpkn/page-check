@@ -3,6 +3,7 @@
  */
 const Url = require('url');
 const path = require('path');
+const spoofer = require('pptr-spoofer');
 const puppeteer = require('puppeteer');
 
 async function PageCheck(input, options){
@@ -23,6 +24,8 @@ async function PageCheck(input, options){
          headless = true, 
          devtools = false, 
          clones = false, 
+         spoof_list = [], 
+         args = [],
          screenshot
       } = options;
 
@@ -30,7 +33,7 @@ async function PageCheck(input, options){
       /**
        * Chromium stuff
        */
-      browser = await puppeteer.launch({ headless, devtools });
+      browser = await puppeteer.launch({ headless, devtools, args });
       pages = await browser.pages();
       page = pages[0];
 
@@ -71,20 +74,12 @@ async function PageCheck(input, options){
          let url_host = Url.parse(url).host;
          let input_host = Url.parse(input).host;
 
-         // Base64 data does not count as 'external request'
+         // Base64 data does not counts as 'external request'
          if(url_host !== input_host && !/^data\:(image|text)/i.test(url)){
             results.errors.push({code: 3, type: 'external request', details: url});
          }
 
-         // Headed version requests 'favicon.ico' file that doesn't exist in 99.99999% of my cases
-         // The bad thing is that this request falls into the list of errors, so we just imitate that this file exists
-         if(/favicon\.ico$/i.test(url) && !headless){
-            req.respond({
-               status: 200
-            });
-         }else{
-            req.continue();
-         }
+         spoofer(req, spoof_list);
       });
 
 

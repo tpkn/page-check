@@ -1,12 +1,13 @@
 {
    "name": "page-check",
    "main": "page-check.js",
-   "version": "3.0.2",
+   "version": "3.1.0",
    "author": {
       "url": "https://github.com/tpkn/"
    },
    "dependencies": {
-      "puppeteer": "latest"
+      "puppeteer": "latest",
+      "pptr-spoofer": "latest"
    },
    "repository": "https://github.com/tpkn/page-check",
    "license": "MIT",
@@ -18,6 +19,9 @@
       "puppeteer",
       "phantom",
       "find",
+      "spoof",
+      "spoofer",
+      "request",
       "phantom",
       "console",
       "external",
