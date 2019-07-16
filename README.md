@@ -1,4 +1,4 @@
-# Page Check
+# Page Check [![npm Package](https://img.shields.io/npm/v/page-check.svg)](https://www.npmjs.org/package/page-check)
 Webpage tester based on Puppeteer and Node.js
 
 
